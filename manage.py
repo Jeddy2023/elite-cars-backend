@@ -3,10 +3,12 @@
 import os
 import sys
 
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -17,6 +19,11 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
 
+# Add the handler that Vercel expects
+application = get_wsgi_application()
+
+# The handler is the entry point for Vercel's serverless function
+handler = application
 
 if __name__ == '__main__':
     main()
