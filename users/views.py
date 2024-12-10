@@ -4,19 +4,29 @@ from rest_framework import status
 from .serializers import RegisterSerializer, UserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .serializers import LoginSerializer, UserSerializer
-from rest_framework.permissions import IsAuthenticated
+from .serializers import LoginSerializer, UserSerializer, LogoutSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from .models import CustomUser
+from rest_framework.pagination import PageNumberPagination
 
 class RegisterView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             user_data = UserSerializer(user).data
             return Response({'message': 'User registered successfully', 'user': user_data}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        first_error = next(iter(serializer.errors.values()))[0] if serializer.errors else "An error occurred"
+        return Response({
+            'message': first_error 
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -41,25 +51,12 @@ class LoginView(APIView):
                     'refreshToken': refresh_token,
                 }, status=status.HTTP_200_OK)
 
-            return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
-class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        try:
-            refresh_token = request.data.get("refresh_token")
-            if not refresh_token:
-                return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-            return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+            return Response({'message': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        first_error = next(iter(serializer.errors.values()))[0] if serializer.errors else "An error occurred"
+        return Response({
+            'message': first_error 
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 class GetUserDetailsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -68,7 +65,6 @@ class GetUserDetailsView(APIView):
         user = request.user
         user_data = UserSerializer(user).data
         return Response(user_data, status=status.HTTP_200_OK)
-
 
 class UpdateProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -80,5 +76,50 @@ class UpdateProfileView(APIView):
         serializer = UserSerializer(instance=user, data=data, partial=True)
         if serializer.is_valid():
             updated_user = serializer.save()
-            return Response(UserSerializer(updated_user).data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            user_data = UserSerializer(updated_user).data
+            return Response({'message': 'User details updated successfully', 'user': user_data}, status=status.HTTP_200_OK)
+        
+        first_error = next(iter(serializer.errors.values()))[0] if serializer.errors else "An error occurred"
+        return Response({
+            'message': first_error 
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                refresh_token = serializer.validated_data['refresh']
+
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+
+                return Response({"message": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
+            except Exception as e:
+                print(e)
+                return Response({"message": "An error occurred during logout."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CustomUserPagination(PageNumberPagination):
+    page_size = 10  
+    page_size_query_param = 'page_size' 
+    max_page_size = 100
+
+class GetUsersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.role == 'admin':
+            return Response({"message": "You do not have permission to view all users."}, status=status.HTTP_403_FORBIDDEN)
+        
+        users = CustomUser.objects.all()
+        paginator = CustomUserPagination()
+        paginated_users = paginator.paginate_queryset(users, request)
+
+        serializer = UserSerializer(paginated_users, many=True)
+        response_data = paginator.get_paginated_response(serializer.data)
+        response_data.status_code = status.HTTP_200_OK
+        return response_data

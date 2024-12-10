@@ -33,10 +33,8 @@ class Vehicle(models.Model):
         ]
     )
     registration_number = models.CharField(max_length=20, unique=True)
-    daily_rent = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2,
-        validators=[MinValueValidator(0)]
+    daily_rent = models.IntegerField(
+        validators=[MinValueValidator(0)]  
     )
     availability_status = models.BooleanField(default=True)
     seating_capacity = models.IntegerField(validators=[MinValueValidator(1)])
@@ -44,7 +42,11 @@ class Vehicle(models.Model):
     transmission = models.CharField(max_length=10, choices=TRANSMISSION_CHOICES)
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
     location = models.CharField(max_length=255)
-    image_urls = models.JSONField(default=list) 
+    # image_data = models.JSONField(default=list) 
+    image_data = models.JSONField(default=lambda: [{
+        'url': 'https://res.cloudinary.com/dyktnfgye/image/upload/v1722173585/8_hyx9vy.png',
+        'public_id': 'default_vehicle_image'
+    }]) 
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 

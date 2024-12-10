@@ -17,7 +17,10 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'full_name', 'email', 'phone_number', 'role', 'profile_picture', 'address']
+        fields = ['id', 'full_name', 'email', 'phone_number', 'role', 'profile_picture', 'is_active', 'address', 'created_at', 'updated_at']

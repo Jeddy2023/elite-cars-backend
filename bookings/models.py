@@ -19,8 +19,8 @@ class Booking(models.Model):
     pickup_location = models.CharField(max_length=255)
     drop_off_location = models.CharField(max_length=255)
     booking_date = models.DateField(default=now)
-    start_date = models.DateField()
-    end_date = models.DateField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
     total_cost = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
