@@ -168,6 +168,10 @@ CORS_ALLOWED_ORIGINS = [
     # 'https://your-frontend-domain.com', 
 ]
 
+ALLOWED_HOSTS = [
+    'http://localhost:5173'
+]
+
 CORS_ALLOW_METHODS = [
     'GET',
     'POST',
