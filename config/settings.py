@@ -169,7 +169,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 ALLOWED_HOSTS = [
-    'http://localhost:5173'
+    'localhost',
+    '127.0.0.1', 
+    'elite-cars-backend.onrender.com', 
 ]
 
 CORS_ALLOW_METHODS = [
