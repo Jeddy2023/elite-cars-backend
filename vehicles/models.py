@@ -5,6 +5,12 @@ from django.utils.timezone import now
 from users.models import CustomUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+def default_vehicle_image():
+    return [{
+        'url': 'https://res.cloudinary.com/dyktnfgye/image/upload/v1722173585/8_hyx9vy.png',
+        'public_id': 'default_vehicle_image'
+    }]
+
 class Vehicle(models.Model):
 
     FUEL_TYPES = [
@@ -43,10 +49,7 @@ class Vehicle(models.Model):
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
     location = models.CharField(max_length=255)
     # image_data = models.JSONField(default=list) 
-    image_data = models.JSONField(default=lambda: [{
-        'url': 'https://res.cloudinary.com/dyktnfgye/image/upload/v1722173585/8_hyx9vy.png',
-        'public_id': 'default_vehicle_image'
-    }]) 
+    image_data = models.JSONField(default=default_vehicle_image)
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 
