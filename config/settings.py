@@ -170,6 +170,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
+    'https://elitecars-frontend.vercel.app'
     # 'https://your-frontend-domain.com', 
 ]
 
@@ -177,6 +178,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1', 
     'elite-cars-backend.onrender.com', 
+    'https://elitecars-frontend.vercel.app'
 ]
 
 CORS_ALLOW_METHODS = [
