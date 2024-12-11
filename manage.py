@@ -19,11 +19,5 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
 
-# Add the handler that Vercel expects
-application = get_wsgi_application()
-
-# The handler is the entry point for Vercel's serverless function
-handler = application
-
 if __name__ == '__main__':
     main()
