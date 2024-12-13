@@ -4,7 +4,6 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .serializers import BookingSerializer, CreateBookingSerializer, UpdateBookingStatusSerializer
 from .models import Booking
-from vehicles.models import Vehicle
 
 class CreateBookingView(APIView):
     permission_classes = [IsAuthenticated]
@@ -12,28 +11,23 @@ class CreateBookingView(APIView):
     def post(self, request):
         serializer = CreateBookingSerializer(data=request.data)
         if serializer.is_valid():
-            vehicle_id = serializer.validated_data['vehicle']
-            pickup_location = serializer.validated_data['pickup_location']
-            drop_off_location = serializer.validated_data['drop_off_location']
-            start_date = serializer.validated_data['start_date']
-            end_date = serializer.validated_data['end_date']
-
-            # Check if the vehicle exists
-            try:
-                vehicle = Vehicle.objects.get(id=vehicle_id)
-            except Vehicle.DoesNotExist:
-                return Response({"message": "Vehicle not found"}, status=status.HTTP_404_NOT_FOUND)
+            validated_data = serializer.validated_data
+            vehicle = validated_data['vehicle_instance']
 
             # Create the booking
             booking = Booking.objects.create(
                 user=request.user,
                 vehicle=vehicle,
-                pickup_location=pickup_location,
-                drop_off_location=drop_off_location,
-                start_date=start_date,
-                end_date=end_date,
-                total_cost=vehicle.daily_rent * ((end_date - start_date).days),
+                pickup_location=validated_data['pickup_location'],
+                drop_off_location=validated_data['drop_off_location'],
+                start_date=validated_data['start_date'],
+                end_date=validated_data['end_date'],
+                total_cost=vehicle.daily_rent * validated_data['duration'],
             )
+
+            # Update vehicle availability
+            vehicle.availability_status = False
+            vehicle.save()
 
             return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
 
@@ -92,7 +86,7 @@ class GetAllBookingsView(APIView):
 class UpdateBookingStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, booking_id):
+    def put(self, request, booking_id):
         if not request.user.role == 'admin':
             return Response({"message": "You do not have permission to update booking status."}, status=status.HTTP_403_FORBIDDEN)
         

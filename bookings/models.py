@@ -21,11 +21,7 @@ class Booking(models.Model):
     booking_date = models.DateField(default=now)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    total_cost = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        validators=[MinValueValidator(0)] 
-    )
+    total_cost = models.PositiveIntegerField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)

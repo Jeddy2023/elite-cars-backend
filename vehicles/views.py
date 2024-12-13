@@ -9,7 +9,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Vehicle
 from .serializers import VehicleSerializer, CreateVehicleSerializer, VehicleImageSerializer
-from cloudinary.uploader import destroy
 
 class CreateVehicleView(APIView):
     permission_classes = [IsAuthenticated]
@@ -156,8 +155,8 @@ class DeleteVehicleView(APIView):
             vehicle = Vehicle.objects.get(pk=pk)
             
             # Delete all images from Cloudinary
-            for image in vehicle.image_data:
-                destroy(image['public_id'])
+            # for image in vehicle.image_data:
+            #     destroy(image['public_id'])
 
             vehicle.delete()
             return Response({"message": "Vehicle deleted successfully."}, status=status.HTTP_204_NO_CONTENT)

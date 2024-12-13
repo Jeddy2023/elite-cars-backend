@@ -3,11 +3,13 @@ from .models import Booking
 from vehicles.models import Vehicle
 from vehicles.serializers import VehicleSerializer
 from users.serializers import UserSerializer
-from django.utils.timezone import now
+from django.utils.timezone import now, datetime, make_aware
 
 class BookingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     vehicle = VehicleSerializer(read_only=True)
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
 
     class Meta:
         model = Booking
@@ -33,6 +35,10 @@ class CreateBookingSerializer(serializers.Serializer):
         if data['end_date'] <= data['start_date']:
             raise serializers.ValidationError({"end_date": "End date must be after the start date."})
 
+        # Convert naive dates to aware datetimes
+        data['start_date'] = make_aware(datetime.combine(data['start_date'], datetime.min.time()))
+        data['end_date'] = make_aware(datetime.combine(data['end_date'], datetime.min.time()))
+
         # Check if the vehicle is available
         try:
             vehicle = Vehicle.objects.get(id=data['vehicle'])
@@ -50,30 +56,7 @@ class CreateBookingSerializer(serializers.Serializer):
         data['duration'] = duration
         data['vehicle_instance'] = vehicle
         return data
-
-    def create(self, validated_data):
-        user = self.context['request'].user
-        vehicle = validated_data['vehicle_instance']
-
-        # Calculate total cost
-        total_cost = vehicle.daily_rent * validated_data['duration']
-
-        # Create the booking
-        booking = Booking.objects.create(
-            user=user,
-            vehicle=vehicle,
-            pickup_location=validated_data['pickup_location'],
-            drop_off_location=validated_data['drop_off_location'],
-            start_date=validated_data['start_date'],
-            end_date=validated_data['end_date'],
-            total_cost=total_cost
-        )
-
-        vehicle.availability_status = False
-        vehicle.save()
-
-        return booking
-
+    
 class UpdateBookingStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=Booking.STATUS_CHOICES)
 
