@@ -97,7 +97,17 @@ class UpdateBookingStatusView(APIView):
 
         serializer = UpdateBookingStatusSerializer(data=request.data)
         if serializer.is_valid():
-            booking.status = serializer.validated_data['status']
+            new_status = serializer.validated_data['status']
+
+            # Update booking status
+            booking.status = new_status
+
+            # If the status is set to 'Completed', change the vehicle's availability status to True
+            if new_status == 'Completed':
+                vehicle = booking.vehicle
+                vehicle.availability_status = True
+                vehicle.save()
+
             booking.save()
             return Response({"message": "Booking status updated successfully"}, status=status.HTTP_200_OK)
 
@@ -105,3 +115,28 @@ class UpdateBookingStatusView(APIView):
         return Response({
             'message': first_error
         }, status=status.HTTP_400_BAD_REQUEST)
+    
+class CancelBookingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, booking_id):
+        try:
+            # Retrieve the booking by ID and ensure it's associated with the logged-in user
+            booking = Booking.objects.get(id=booking_id, user=request.user)
+        except Booking.DoesNotExist:
+            return Response({"message": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the booking status is already 'Cancelled' or 'Completed'
+        if booking.status in ['Cancelled', 'Completed']:
+            return Response({"message": "Cannot cancel this booking"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update booking status to 'Cancelled'
+        booking.status = 'Cancelled'
+        booking.save()
+
+        # Restore vehicle availability
+        vehicle = booking.vehicle
+        vehicle.availability_status = True
+        vehicle.save()
+
+        return Response({"message": "Booking cancelled successfully"}, status=status.HTTP_200_OK)
